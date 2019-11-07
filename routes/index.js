@@ -211,6 +211,7 @@ function populateClusterStateWithInstanceSummaries(cluster) {
             "registeredMemory": utils.registeredMemory(instance),
             "remainingCpu": utils.remainingCpu(instance),
             "remainingMemory": utils.remainingMemory(instance),
+			"az": utils.az(instance),
             "tasks": tasksArray.filter(function (t) {
               return t.containerInstanceArn === instance.containerInstanceArn;
             })

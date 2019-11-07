@@ -16,5 +16,8 @@ module.exports = {
   },
   remainingPorts: function (instance) {
     return instance["remainingResources"].find(function (element, index, array) {return element.name == 'PORTS'}).integerValue;
+  },
+  az: function (instance) {
+    return instance["attributes"].find(function (element, index, array) {return element.name == 'ecs.availability-zone'}).value;
   }
 };
