@@ -78,14 +78,15 @@ function copyToClipboard(text) {
 
 function addD3DataToTask(task, resourceType, y0) {
   const resourceAllocation = task.taskDefinition.containerDefinitions.reduce(function (sum, b) {
-    return sum + (resourceType == ResourceEnum.MEMORY ? b.memory : b.cpu);
+    return sum + (resourceType == ResourceEnum.MEMORY ? b.memoryReservation : b.cpu);
   }, 0);
   const y1 = y0 + resourceAllocation;
   task.d3Data = {
     name: taskFamilyAndRevision(task),
     resourceAllocation: resourceAllocation, // sum of all containers' resource (memory/cpu) allocation
     y0: y0,
-    y1: y1
+    y1: y1,
+	az: task.az
   };
   return y1;
 }
@@ -169,6 +170,7 @@ function renderGraph(timestampDivId, chartDivId, legendDivId, cluster, resourceT
     const xAxis = d3.svg.axis().scale(xRange).orient("bottom");
     const yAxis = d3.svg.axis().scale(yRange).orient("left").tickFormat(d3.format(".2s"));
 
+	const grayRange = d3.scale.ordinal().range(colorbrewer.Greys[9].concat(colorbrewer.Oranges[8]).slice(2));
     // Main graph area
     const graph = recreateMainGraphElement(chartDivId, graphWidth, LEFT_MARGIN, RIGHT_MARGIN, TOTAL_HEIGHT, GRAPH_TOP_MARGIN, GRAPH_BOTTOM_MARGIN);
 
@@ -177,6 +179,10 @@ function renderGraph(timestampDivId, chartDivId, legendDivId, cluster, resourceT
       onCompletion();
       return graph;
     }
+	
+	instanceSummaries.sort((a, b) => a.az.localeCompare(b.az));
+	
+	azs = instanceSummaries.map(item => item.az).filter((value, index, self) => self.indexOf(value) === index);
 
     // TODO: Move this to footer
     graph.append("g")
@@ -190,12 +196,14 @@ function renderGraph(timestampDivId, chartDivId, legendDivId, cluster, resourceT
         return taskFamilyAndRevision(t);
       }))
     }, []);
+	
     uniqueTaskDefs = uniqueTaskDefs.filter(function (elem, pos) {
       return uniqueTaskDefs.indexOf(elem) == pos;
     });
     uniqueTaskDefs.sort();
 
     colorRange.domain(uniqueTaskDefs);
+	grayRange.domain(azs);
 
     instanceSummaries.forEach(function (instance) {
       // Add d3Data to each task for later display
@@ -298,8 +306,13 @@ function renderGraph(timestampDivId, chartDivId, legendDivId, cluster, resourceT
         return yRange(translateResourceAmountForYAxis(registeredResource(d, resourceType), resourceType))
       })
       .attr("height", function (d) {
-        return yRange(translateResourceAmountForYAxis(maxResource - (registeredResource(d, resourceType)), resourceType));
+        return yRange(translateResourceAmountForYAxis(maxResource - (registeredResource(d, resourceType)), resourceType)) + 7;
+      })
+	  .style("fill", function (d) {
+		  console.log(d.az + " " + grayRange(d.az));
+          return grayRange(d.az);
       });
+		
 
     if (showTaskBreakdown) {
       // For each task on each server, represent resource (memory/cpu) allocation as a rect
