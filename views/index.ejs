@@ -159,8 +159,8 @@
       window.clusterChoiceCookie = clusterChoiceCookie;
       if (!clusterListCookie) {
         $.getJSON("/api/cluster_names" + (staticData() ? "?static=true" : ""), function(data) {
-          setClustersCookie(data.toString());
-          buildClusterDropdown(data.toString(), clusterChoiceCookie);
+          setClustersCookie(data.toString().split(",").sort().join(","));
+          buildClusterDropdown(data.toString().split(",").sort().join(","), clusterChoiceCookie);
           repopulateGraph();
         });
       } else {
